@@ -74,6 +74,14 @@ class Product(BaseModel):
     is_new_arrival = models.BooleanField(default=False, db_index=True)
     is_flash_sale = models.BooleanField(default=False, db_index=True)
 
+    # Deals & Offers tagging — product shows when a deal card is clicked
+    deal_cards = models.ManyToManyField(
+        'promotions.DealOfferCard',
+        blank=True,
+        related_name='products',
+        help_text='Tag this product to appear in specific Deals & Offers card pages',
+    )
+
     # Inventory
     track_inventory = models.BooleanField(default=True)
     allow_backorder = models.BooleanField(default=False)

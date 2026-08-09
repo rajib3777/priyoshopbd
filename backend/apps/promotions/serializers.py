@@ -11,6 +11,12 @@ class PromotionSerializer(serializers.ModelSerializer):
 
 
 class DealOfferCardSerializer(serializers.ModelSerializer):
+    product_count = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source='category.name', read_only=True, default='')
+
     class Meta:
         model = DealOfferCard
         fields = '__all__'
+
+    def get_product_count(self, obj):
+        return obj.products.filter(is_active=True, status='active').count()

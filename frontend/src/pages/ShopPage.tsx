@@ -19,10 +19,21 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onAddToCart }) => {
   const selectedCategory = searchParams.get('category') || '';
   const searchQuery = searchParams.get('search') || '';
   const sort = searchParams.get('sort') || 'newest';
+  const dealCardId = searchParams.get('deal_card') || '';
+  const [dealCardTitle, setDealCardTitle] = React.useState('');
 
   useEffect(() => {
     api.get('/categories/').then(res => setCategories(res.data.results || res.data)).catch(() => {});
   }, []);
+
+  // Fetch deal card name when deal_card param is set
+  useEffect(() => {
+    if (dealCardId) {
+      api.get(`/promotions/deal-cards/${dealCardId}/`).then(r => setDealCardTitle(r.data.title || '')).catch(() => setDealCardTitle(''));
+    } else {
+      setDealCardTitle('');
+    }
+  }, [dealCardId]);
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +57,8 @@ export const ShopPage: React.FC<ShopPageProps> = ({ onAddToCart }) => {
             <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white">
               {searchQuery
                 ? `Search Results for "${searchQuery}"`
+                : dealCardId && dealCardTitle
+                ? `${dealCardTitle}`
                 : searchParams.get('is_flash_sale') === 'true'
                 ? '⚡ Flash Sale Special Products'
                 : searchParams.get('is_new_arrival') === 'true'

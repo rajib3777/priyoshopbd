@@ -26,9 +26,10 @@ const ProductFormModal: React.FC<{
   categories: any[];
   subCategories: any[];
   brands: any[];
+  dealCards: any[];
   onClose: () => void;
   onSaved: () => void;
-}> = ({ editing, categories, subCategories, brands, onClose, onSaved }) => {
+}> = ({ editing, categories, subCategories, brands, dealCards, onClose, onSaved }) => {
   const [form, setForm] = useState({ ...emptyForm });
   const [activeTab, setActiveTab] = useState('basic');
   const [saving, setSaving] = useState(false);
@@ -36,6 +37,7 @@ const ProductFormModal: React.FC<{
   const [filteredSubs, setFilteredSubs] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [selectedDealCards, setSelectedDealCards] = useState<number[]>([]);
 
   useEffect(() => {
     if (editing) {
@@ -75,6 +77,9 @@ const ProductFormModal: React.FC<{
         seo_keywords: editing.seo_keywords || '',
       });
       if (editing.primary_image) setImagePreview(editing.primary_image);
+      if (editing.deal_cards) setSelectedDealCards(editing.deal_cards.map((d: any) => typeof d === 'object' ? d.id : d));
+    } else {
+      setSelectedDealCards([]);
     }
   }, [editing]);
 
@@ -121,6 +126,11 @@ const ProductFormModal: React.FC<{
       } else {
         const res = await api.post('/products/admin/products/', payload);
         savedProduct = res.data;
+      }
+
+      // Assign deal cards (ManyToMany) via separate PATCH
+      if (savedProduct?.id) {
+        await api.patch(`/products/admin/products/${savedProduct.id}/`, { deal_cards: selectedDealCards });
       }
 
       // Upload primary image if selected
@@ -262,6 +272,41 @@ const ProductFormModal: React.FC<{
                     </label>
                   ))}
                 </div>
+
+                {/* Deals & Offers Tag */}
+                {dealCards.length > 0 && (
+                  <div>
+                    <label className={labelCls}>Deals & Offers Tags</label>
+                    <p className="text-[10px] text-gray-400 mb-2">এই product যে Deals Card-এ দেখাবে সেগুলো select করুন</p>
+                    <div className="flex flex-wrap gap-2">
+                      {dealCards.map((dc: any) => {
+                        const checked = selectedDealCards.includes(dc.id);
+                        return (
+                          <label
+                            key={dc.id}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer border transition ${
+                              checked
+                                ? 'bg-brand-600 text-white border-brand-600 shadow-md'
+                                : 'bg-gray-50 dark:bg-dark-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-700 hover:border-brand-400'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedDealCards(prev =>
+                                  prev.includes(dc.id) ? prev.filter(id => id !== dc.id) : [...prev, dc.id]
+                                );
+                              }}
+                            />
+                            {checked ? '✓ ' : ''}{dc.title}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -438,6 +483,7 @@ export const AdminProductListPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [dealCards, setDealCards] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [msg, setMsg] = useState('');
@@ -453,6 +499,7 @@ export const AdminProductListPage: React.FC = () => {
       api.get('/categories/').then(r => setCategories(r.data.results || r.data)),
       api.get('/categories/subcategories/').then(r => setSubCategories(r.data.results || r.data)),
       api.get('/brands/').then(r => setBrands(r.data.results || r.data)),
+      api.get('/promotions/deal-cards/').then(r => setDealCards(r.data.results || r.data)),
     ]).catch(() => {});
   }, []);
 
@@ -487,6 +534,7 @@ export const AdminProductListPage: React.FC = () => {
           categories={categories}
           subCategories={subCategories}
           brands={brands}
+          dealCards={dealCards}
           onClose={() => setShowModal(false)}
           onSaved={fetchProducts}
         />

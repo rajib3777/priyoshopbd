@@ -463,7 +463,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
             {dealCards.map((card) => (
               <Link
                 key={card.id}
-                to={card.target_url || '/shop?is_flash_sale=true'}
+                to={`/shop?deal_card=${card.id}`}
                 className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-500/40 transition-all duration-300 flex flex-col justify-between"
               >
                 <div className="relative h-32 sm:h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">

@@ -157,6 +157,11 @@ class ProductListView(generics.ListAPIView):
         if max_price:
             qs = qs.filter(published_price__lte=max_price)
 
+        # Deal card filter — show products tagged to a specific deals & offers card
+        deal_card_id = self.request.query_params.get('deal_card')
+        if deal_card_id:
+            qs = qs.filter(deal_cards__id=deal_card_id).distinct()
+
         # Custom sorting logic
         sort = self.request.query_params.get('sort')
         if sort == 'price_low':

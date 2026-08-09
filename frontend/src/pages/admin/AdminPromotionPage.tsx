@@ -257,7 +257,12 @@ export const AdminPromotionPage: React.FC = () => {
                 <div className="p-4 space-y-2 flex-1">
                   <h4 className="font-extrabold text-sm text-gray-900 dark:text-white line-clamp-1">{d.title}</h4>
                   <p className="text-[11px] text-gray-500 line-clamp-2">{d.subtitle || 'Click to explore products in this deal.'}</p>
-                  <p className="text-[10px] text-brand-600 dark:text-brand-400 font-mono truncate">Target: {d.target_url}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300 font-bold text-[10px]">
+                      {d.product_count ?? 0} Products Tagged
+                    </span>
+                    <a href={`/shop?deal_card=${d.id}`} target="_blank" rel="noreferrer" className="text-[10px] text-gray-400 hover:text-brand-600 underline">Preview →</a>
+                  </div>
                 </div>
 
                 <div className="p-3 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between gap-2">

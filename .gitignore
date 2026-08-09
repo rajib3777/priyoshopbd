@@ -20,11 +20,8 @@ frontend/dist/
 frontend/dist-ssr/
 *.local
 
-# Environment variables & secrets
-.env
-.env.local
-.env.development.local
-.env.test.local
+# Environment variables & secrets (only exclude production .env.production)
+.env.production
 .env.production.local
 *.pem
 

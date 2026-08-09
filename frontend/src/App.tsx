@@ -146,7 +146,7 @@ export const App: React.FC = () => {
                 <Route path="/track/:orderNumber" element={<OrderTrackingPage />} />
                 <Route path="/login" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/register" element={<RegisterPage onLoginSuccess={handleLoginSuccess} />} />
-                <Route path="/account" element={<AccountPage user={user} onLogout={handleLogout} />} />
+                <Route path="/account/*" element={<AccountPage user={user} onLogout={handleLogout} />} />
                 <Route path="/page/:slug" element={<CMSPage />} />
               </Routes>
             </main>

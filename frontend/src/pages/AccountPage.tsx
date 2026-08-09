@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   User, Package, RotateCcw, LogOut, Ticket, Copy, Check,
-  Truck, ChevronRight, ShieldCheck, ShoppingBag, ArrowRight
+  Truck, ChevronRight, ShieldCheck, ShoppingBag, ArrowRight, Lock
 } from 'lucide-react';
 import api from '@/api/client';
 import { Order, ReturnRequest } from '@/types';
@@ -25,11 +25,20 @@ interface CouponItem {
 }
 
 export const AccountPage: React.FC<AccountPageProps> = ({ user, onLogout }) => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'orders' | 'coupons' | 'returns'>('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Sync active tab from URL path
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/coupons')) setActiveTab('coupons');
+    else if (path.includes('/returns')) setActiveTab('returns');
+    else setActiveTab('orders');
+  }, [location.pathname]);
 
   useEffect(() => {
     if (user) {
@@ -41,15 +50,69 @@ export const AccountPage: React.FC<AccountPageProps> = ({ user, onLogout }) => {
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-dark-800 text-gray-400 flex items-center justify-center mx-auto">
-          <User className="w-8 h-8" />
+      <div className="min-h-[72vh] flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm">
+          <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-xl border border-gray-100 dark:border-dark-700 overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-brand-500 via-purple-500 to-indigo-500" />
+            <div className="px-8 py-10 flex flex-col items-center text-center space-y-5">
+              {/* Icon */}
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-950/30 dark:to-brand-900/30 flex items-center justify-center shadow-inner">
+                  <User className="w-10 h-10 text-brand-500" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center shadow-md">
+                  <Lock className="w-3.5 h-3.5 text-white" />
+                </span>
+              </div>
+              {/* Text */}
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-extrabold text-gray-900 dark:text-white">অ্যাকাউন্টে প্রবেশ করুন</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  আপনার অর্ডার ট্র্যাক করতে, কুপন দেখতে ও রিটার্ন করতে লগইন করুন।
+                </p>
+              </div>
+              {/* Benefits */}
+              <div className="w-full bg-gray-50 dark:bg-dark-900/50 rounded-2xl p-4 space-y-2.5 text-left">
+                {[
+                  { icon: Package, label: 'রিয়েল-টাইম অর্ডার ট্র্যাকিং' },
+                  { icon: Ticket, label: 'একচেটিয়া ডিসকাউন্ট কুপন' },
+                  { icon: RotateCcw, label: 'সহজ রিটার্ন ও রিফান্ড' },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-300">
+                    <div className="w-7 h-7 rounded-lg bg-brand-100 dark:bg-brand-950/40 flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                    </div>
+                    <span className="font-medium">{label}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Buttons */}
+              <div className="w-full space-y-2.5 pt-1">
+                <Link
+                  to="/login"
+                  state={{ from: location.pathname }}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  লগইন করুন <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/register"
+                  className="flex items-center justify-center w-full py-3 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-700 dark:text-gray-200 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-dark-600 transition"
+                >
+                  নতুন অ্যাকাউন্ট তৈরি করুন
+                </Link>
+              </div>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">আপনার তথ্য সম্পূর্ণ সুরক্ষিত ও এনক্রিপ্টেড</p>
+            </div>
+          </div>
+          {/* Guest hint */}
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-center">
+            <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+              অ্যাকাউন্ট ছাড়াও অর্ডার দিয়েছেন?{' '}
+              <Link to="/track" className="font-extrabold underline underline-offset-2">এখানে ট্র্যাক করুন</Link>
+            </p>
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Customer Account Required</h2>
-        <p className="text-xs text-gray-500">Please log in to view your profile, active orders, and exclusive discount coupons.</p>
-        <Link to="/login" className="inline-block px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition">
-          Login / Register →
-        </Link>
       </div>
     );
   }

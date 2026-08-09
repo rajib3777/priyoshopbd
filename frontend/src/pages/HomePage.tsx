@@ -191,37 +191,39 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
               const btnUrl = activeSlide?.btn_url || siteSettings.hero_btn_url || '/shop';
 
               return (
-                <section className="relative overflow-hidden bg-gradient-to-br from-brand-950 via-dark-900 to-gray-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-10 shadow-2xl min-h-[300px] sm:min-h-[360px] flex items-center h-full">
+                <section className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-10 shadow-2xl border border-indigo-500/20 min-h-[300px] sm:min-h-[360px] flex items-center h-full">
                   {slideImg && (
                     <img
                       src={slideImg}
                       alt={title}
-                      className="absolute inset-0 w-full h-full object-cover opacity-35 mix-blend-overlay transition-opacity duration-500"
+                      className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay transition-opacity duration-500"
                     />
                   )}
-                  <div className="absolute -right-20 -top-20 w-80 h-80 bg-brand-600/30 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+                  {/* Glowing color spots */}
+                  <div className="absolute -right-10 -top-10 w-96 h-96 bg-brand-500/25 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -left-10 -bottom-10 w-80 h-80 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute left-1/3 top-1/2 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
                   <div className="relative z-10 max-w-xl">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[11px] sm:text-xs font-semibold mb-3 backdrop-blur-md">
-                      <Sparkles className="w-3.5 h-3.5 text-brand-400" /> {badge}
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 text-amber-300 text-[11px] sm:text-xs font-bold mb-3 backdrop-blur-md shadow-sm">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" /> {badge}
                     </div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight mb-3">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight mb-3 text-white drop-shadow-sm">
                       {title}
                     </h1>
-                    <p className="text-gray-300 text-xs sm:text-sm mb-6 leading-relaxed line-clamp-3">
+                    <p className="text-slate-200 text-xs sm:text-sm mb-6 leading-relaxed line-clamp-3">
                       {subtitle}
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <Link
                         to={btnUrl}
-                        className="px-6 py-3 rounded-full bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xl shadow-brand-600/40 flex items-center gap-2 transition"
+                        className="px-6 py-3 rounded-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 active:scale-95 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-brand-600/30 flex items-center gap-2 transition"
                       >
                         {btnText} <ArrowRight className="w-4 h-4" />
                       </Link>
                       <Link
                         to="/shop?is_flash_sale=true"
-                        className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white font-semibold text-xs sm:text-sm backdrop-blur transition"
+                        className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white font-semibold text-xs sm:text-sm backdrop-blur border border-white/10 transition"
                       >
                         Flash Sales
                       </Link>

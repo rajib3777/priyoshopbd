@@ -336,7 +336,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
-          {categories.slice(0, 4).map((cat, index) => {
+          {categories.map((cat, index) => {
             const badges = [
               { color: 'from-blue-600 to-indigo-700', text: 'Men Collection' },
               { color: 'from-pink-500 to-rose-600', text: 'Women Collection' },

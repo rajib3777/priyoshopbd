@@ -206,7 +206,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
 
                   <div className="relative z-10 max-w-xl">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 text-amber-300 text-[11px] sm:text-xs font-bold mb-3 backdrop-blur-md shadow-sm">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" /> {badge}
+                      {badge}
                     </div>
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight mb-3 text-white drop-shadow-sm">
                       {title}
@@ -417,77 +417,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
         </div>
       </section>
 
-      {/* ── 3. Exclusive Deals & Offers Section (with picture cards & redirect links) ── */}
-      {dealCards.length > 0 && (
-        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
-          <div className="p-5 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-brand-500/10 to-purple-500/10 border border-orange-200 dark:border-orange-950/40 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-orange-500 text-white shadow-md">
-                    <Sparkles className="w-4 h-4" />
-                  </span>
-                  <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
-                    Exclusive Deals & Offers
-                  </h2>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  ছবি সহ বিশেষ ছাড় ও অফার কার্ডসমূহে ক্লিক করে সরাসরি অফারের প্রোডাক্ট ক্যাটালগে চলে যান
-                </p>
-              </div>
-
-              <Link
-                to="/shop?is_flash_sale=true"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline shrink-0"
-              >
-                সব অফার দেখুন <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {dealCards.map((card) => (
-                <Link
-                  key={card.id}
-                  to={card.target_url || '/shop?is_flash_sale=true'}
-                  className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl transition duration-300 flex flex-col justify-between"
-                >
-                  <div className="relative h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">
-                    <img
-                      src={card.image_url || card.image || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&q=80'}
-                      alt={card.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                    />
-                    {card.badge_text && (
-                      <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-brand-600 text-white font-black text-[10px] uppercase shadow-lg tracking-wider">
-                        {card.badge_text}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3 text-white font-bold text-xs">
-                      অফারের পণ্যগুলো দেখুন →
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-1.5 flex-1">
-                    <h3 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-brand-600 transition line-clamp-1">
-                      {card.title}
-                    </h3>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
-                      {card.subtitle || 'সবচেয়ে সেরা অফার ও ডিসকাউন্টে প্রোডাক্ট অর্ডার করুন।'}
-                    </p>
-                  </div>
-
-                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
-                    <span>Explore Products</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-
       {/* ── 3. Trending Products Grid ─────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         <div className="flex items-center justify-between mb-4">
@@ -512,7 +441,67 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
         </div>
       </section>
 
-      {/* ── 4. Featured Products Grid ─────────────────────────────────────── */}
+      {/* ── 4. Exclusive Deals & Offers Cards (Clean layout without side border container & no star icon) ── */}
+      {dealCards.length > 0 && (
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                Exclusive Deals & Offers
+              </h2>
+              <p className="text-[11px] text-gray-500">বিশেষ ছাড় ও অফার ক্যাটালগ</p>
+            </div>
+            <Link
+              to="/shop?is_flash_sale=true"
+              className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-0.5"
+            >
+              সব অফার দেখুন <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {dealCards.map((card) => (
+              <Link
+                key={card.id}
+                to={card.target_url || '/shop?is_flash_sale=true'}
+                className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-500/40 transition duration-300 flex flex-col justify-between"
+              >
+                <div className="relative h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">
+                  <img
+                    src={card.image_url || card.image || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&q=80'}
+                    alt={card.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                  />
+                  {card.badge_text && (
+                    <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-brand-600 text-white font-black text-[10px] uppercase shadow-lg tracking-wider">
+                      {card.badge_text}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3 text-white font-bold text-xs">
+                    অফারের পণ্যগুলো দেখুন →
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-1.5 flex-1">
+                  <h3 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-brand-600 transition line-clamp-1">
+                    {card.title}
+                  </h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
+                    {card.subtitle || 'সবচেয়ে সেরা অফার ও ডিসকাউন্টে প্রোডাক্ট অর্ডার করুন।'}
+                  </p>
+                </div>
+
+                <div className="px-4 py-2.5 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
+                  <span>Explore Products</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── 5. Featured Products Grid ─────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

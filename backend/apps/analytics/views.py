@@ -2,9 +2,10 @@
 Analytics & Profit Calculation Engine API
 """
 from decimal import Decimal
-from datetime import timedelta
+from datetime import timedelta, date
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg, F
+from django.db.models.functions import TruncDate
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from core.permissions import IsAdminUser
@@ -62,6 +63,68 @@ class AdminDashboardAnalyticsView(APIView):
             'user__email', 'user__first_name', 'total_orders', 'lifetime_value'
         )
 
+        # ─── Daily Time-Series for Charts ─────────────────────────────────────
+        # Revenue, Profit, Cost per day
+        daily_revenue = (
+            Order.objects.filter(created_at__gte=start_date, status__in=[
+                'delivered', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'pending'
+            ])
+            .annotate(day=TruncDate('created_at'))
+            .values('day')
+            .annotate(
+                revenue=Sum('grand_total'),
+                profit=Sum('estimated_profit'),
+                cost=Sum('total_buying_cost'),
+            )
+            .order_by('day')
+        )
+
+        # Delivered orders per day
+        daily_delivered = (
+            Order.objects.filter(created_at__gte=start_date, status='delivered')
+            .annotate(day=TruncDate('created_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+
+        # Cancelled orders per day
+        daily_cancelled = (
+            Order.objects.filter(created_at__gte=start_date, status='cancelled')
+            .annotate(day=TruncDate('created_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+
+        # ─── Order Status Breakdown ────────────────────────────────────────────
+        all_orders_in_period = Order.objects.filter(created_at__gte=start_date)
+        status_breakdown = list(
+            all_orders_in_period
+            .values('status')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+        # Build unified daily_stats list (merge all by date)
+        daily_map: dict = {}
+        for row in daily_revenue:
+            d = str(row['day'])
+            daily_map.setdefault(d, {'date': d, 'revenue': 0, 'profit': 0, 'cost': 0, 'delivered': 0, 'cancelled': 0})
+            daily_map[d]['revenue'] = float(row['revenue'] or 0)
+            daily_map[d]['profit'] = float(row['profit'] or 0)
+            daily_map[d]['cost'] = float(row['cost'] or 0)
+        for row in daily_delivered:
+            d = str(row['day'])
+            daily_map.setdefault(d, {'date': d, 'revenue': 0, 'profit': 0, 'cost': 0, 'delivered': 0, 'cancelled': 0})
+            daily_map[d]['delivered'] = row['count']
+        for row in daily_cancelled:
+            d = str(row['day'])
+            daily_map.setdefault(d, {'date': d, 'revenue': 0, 'profit': 0, 'cost': 0, 'delivered': 0, 'cancelled': 0})
+            daily_map[d]['cancelled'] = row['count']
+
+        daily_stats = sorted(daily_map.values(), key=lambda x: x['date'])
+
         return Response({
             'period': period,
             'summary': {
@@ -72,6 +135,8 @@ class AdminDashboardAnalyticsView(APIView):
                 'discounts': str(discounts),
                 'average_order_value': str(round(aov, 2)),
             },
+            'daily_stats': daily_stats,
+            'status_breakdown': status_breakdown,
             'top_products': list(top_products),
             'top_customers': list(top_customers),
             'alerts': {

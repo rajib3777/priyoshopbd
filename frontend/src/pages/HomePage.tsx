@@ -280,10 +280,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
               />
               <div className="relative z-10 space-y-1">
                 <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white font-extrabold text-[10px] uppercase backdrop-blur-md">
-                  {dealCards[0]?.badge_text || '⚡ MEGA SALE'}
+                  {dealCards[0]?.badge_text || 'MEGA SALE'}
                 </span>
                 <h3 className="font-extrabold text-base sm:text-lg line-clamp-1 leading-snug">
-                  {dealCards[0]?.title || '⚡ Mega Flash Deals 50% Off'}
+                  {dealCards[0]?.title || 'Mega Flash Deals 50% Off'}
                 </h3>
                 <p className="text-[11px] text-orange-100 line-clamp-2">
                   {dealCards[0]?.subtitle || 'Top Electronics & Gadgets at Special Prices.'}
@@ -307,10 +307,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
               />
               <div className="relative z-10 space-y-1">
                 <span className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white font-extrabold text-[10px] uppercase backdrop-blur-md">
-                  {dealCards[1]?.badge_text || '📱 SPECIAL OFFER'}
+                  {dealCards[1]?.badge_text || 'SPECIAL OFFER'}
                 </span>
                 <h3 className="font-extrabold text-base sm:text-lg line-clamp-1 leading-snug">
-                  {dealCards[1]?.title || '📱 Smartphone & Tech Deals'}
+                  {dealCards[1]?.title || 'Smartphone & Tech Deals'}
                 </h3>
                 <p className="text-[11px] text-indigo-200 line-clamp-2">
                   {dealCards[1]?.subtitle || 'Official Warranty + Extra 2% Account Cash Discount.'}
@@ -459,40 +459,40 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             {dealCards.map((card) => (
               <Link
                 key={card.id}
                 to={card.target_url || '/shop?is_flash_sale=true'}
-                className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-500/40 transition duration-300 flex flex-col justify-between"
+                className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-500/40 transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="relative h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">
+                <div className="relative h-32 sm:h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">
                   <img
                     src={card.image_url || card.image || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&q=80'}
                     alt={card.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
                   />
                   {card.badge_text && (
-                    <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-brand-600 text-white font-black text-[10px] uppercase shadow-lg tracking-wider">
-                      {card.badge_text}
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-brand-600 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-md tracking-wider">
+                      {card.badge_text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')}
                     </span>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3 text-white font-bold text-xs">
-                    অফারের পণ্যগুলো দেখুন →
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-2.5 sm:p-3 text-white font-bold text-[11px] sm:text-xs">
+                    অফারের প্রডাক্টসমূহ →
                   </div>
                 </div>
 
-                <div className="p-4 space-y-1.5 flex-1">
-                  <h3 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-brand-600 transition line-clamp-1">
-                    {card.title}
+                <div className="p-3 sm:p-4 space-y-1 flex-1">
+                  <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white group-hover:text-brand-600 transition line-clamp-1 leading-snug">
+                    {card.title.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')}
                   </h3>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
-                    {card.subtitle || 'সবচেয়ে সেরা অফার ও ডিসকাউন্টে প্রোডাক্ট অর্ডার করুন।'}
+                  <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-tight">
+                    {card.subtitle || 'সেরা দামে সেরা প্রডাক্টের অফার দেখুন।'}
                   </p>
                 </div>
 
-                <div className="px-4 py-2.5 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
-                  <span>Explore Products</span>
+                <div className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between text-[11px] sm:text-xs font-bold text-brand-600 dark:text-brand-400">
+                  <span>View Products</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
                 </div>
               </Link>

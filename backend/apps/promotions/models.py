@@ -83,3 +83,23 @@ class PromotionCategory(models.Model):
     class Meta:
         db_table = 'promotion_categories'
         unique_together = [('promotion', 'category')]
+
+
+class DealOfferCard(TimeStampedModel):
+    """Deals and Offers Section Cards on Homepage with pictures and redirect links."""
+    title = models.CharField(max_length=200)
+    subtitle = models.CharField(max_length=300, blank=True)
+    badge_text = models.CharField(max_length=100, blank=True)
+    image = models.ImageField(upload_to='deals/', null=True, blank=True)
+    image_url = models.CharField(max_length=500, blank=True)
+    target_url = models.CharField(max_length=300, default='/shop?is_flash_sale=true')
+    category = models.ForeignKey('categories.Category', null=True, blank=True, on_delete=models.SET_NULL, related_name='deal_cards')
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'deal_offer_cards'
+        ordering = ['sort_order', '-created_at']
+
+    def __str__(self):
+        return self.title

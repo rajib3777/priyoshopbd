@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.promotions.models import Promotion, PromotionProduct, PromotionCategory
+from apps.promotions.models import Promotion, PromotionProduct, PromotionCategory, DealOfferCard
 
 
 class PromotionSerializer(serializers.ModelSerializer):
@@ -7,4 +7,10 @@ class PromotionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Promotion
+        fields = '__all__'
+
+
+class DealOfferCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DealOfferCard
         fields = '__all__'

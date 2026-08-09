@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Flame, Award, ChevronRight, Star, CheckCircle, MessageSquare,
-  ChevronDown, ChevronUp, Send, ShieldCheck, Truck, Banknote, HelpCircle, User, Plus, X, Phone, Zap, ShoppingBag
+  ArrowRight, Flame, Award, ChevronRight, ChevronLeft, Star, CheckCircle, MessageSquare,
+  ChevronDown, ChevronUp, Send, ShieldCheck, Truck, Banknote, HelpCircle, User, Plus, X, Phone, Zap, ShoppingBag, Sparkles, Gift, Tag
 } from 'lucide-react';
 import api from '@/api/client';
 import { ProductCard } from '@/components/ProductCard';
@@ -45,6 +45,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [heroSlides, setHeroSlides] = useState<any[]>([]);
+  const [dealCards, setDealCards] = useState<any[]>([]);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     hero_badge_text: 'Next-Gen Shopping Experience',
@@ -80,7 +83,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
       api.get('/settings/public/'),
       api.get('/reviews/'),
       api.get('/products/?page_size=40&ordering=-created_at'),
-    ]).then(([featRes, trendRes, newRes, flashRes, catRes, settingsRes, reviewRes, allProdRes]) => {
+      api.get('/promotions/hero-slides/'),
+      api.get('/promotions/deal-cards/'),
+    ]).then(([featRes, trendRes, newRes, flashRes, catRes, settingsRes, reviewRes, allProdRes, heroRes, dealRes]) => {
       setFeaturedProducts(featRes.data.results || featRes.data || []);
       setTrendingProducts(trendRes.data.results || trendRes.data || []);
       setNewArrivals(newRes.data.results || newRes.data || []);
@@ -93,9 +98,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
       const allP = allProdRes.data.results || allProdRes.data || [];
       setAllProducts(allP);
       if (allP.length > 0) setNewReviewProductId(allP[0].id);
+
+      setHeroSlides(heroRes.data.results || heroRes.data || []);
+      setDealCards(dealRes.data.results || dealRes.data || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  // Auto-play Hero Carousel
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlideIndex(prev => (prev + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [heroSlides.length]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,47 +175,129 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
   return (
     <div className="space-y-10 sm:space-y-16 pb-20 w-full max-w-full overflow-x-hidden">
 
-      {/* ── 1. Hero Banner Section ────────────────────────────────────────── */}
-      <div className="px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-dark-900 to-gray-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-12 shadow-2xl min-h-[260px] sm:min-h-[340px] flex items-center">
-          {/* Hero background image overlay */}
-          {heroImgUrl && (
-            <img
-              src={heroImgUrl}
-              alt="Hero Background"
-              className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay"
-            />
-          )}
-          {/* Decorative glow circles */}
-          <div className="absolute -right-20 -top-20 w-80 h-80 bg-brand-600/30 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+      {/* ── 1. Hero Banner Carousel Section ────────────────────────────────── */}
+      <div className="px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-3">
+        {heroSlides.length > 0 ? (
+          <div className="relative group">
+            {/* Active Slide Display */}
+            {(() => {
+              const activeSlide = heroSlides[currentSlideIndex];
+              const slideImg = activeSlide.image_url || activeSlide.image || heroImgUrl;
+              return (
+                <section className="relative overflow-hidden bg-gradient-to-br from-brand-950 via-dark-900 to-gray-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-12 shadow-2xl min-h-[280px] sm:min-h-[360px] flex items-center transition-all duration-500">
+                  {slideImg && (
+                    <img
+                      src={slideImg}
+                      alt={activeSlide.title}
+                      className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay transition-opacity duration-500"
+                    />
+                  )}
+                  <div className="absolute -right-20 -top-20 w-80 h-80 bg-brand-600/30 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[11px] sm:text-xs font-semibold mb-4 backdrop-blur-md">
-              {siteSettings.hero_badge_text || 'Next-Gen Shopping Experience'}
-            </div>
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight mb-3">
-              {siteSettings.hero_title || 'Next-Gen Smartphones & Modern Lifestyle'}
-            </h1>
-            <p className="text-gray-300 text-xs sm:text-base mb-6 leading-relaxed">
-              {siteSettings.hero_subtitle || 'Upgrade your lifestyle with authentic brand products, official warranty, extra 2% account discount & instant Cash on Delivery across Bangladesh.'}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to={siteSettings.hero_btn_url || '/shop'}
-                className="px-6 py-3.5 rounded-full bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xl shadow-brand-600/40 flex items-center gap-2 transition"
-              >
-                {siteSettings.hero_btn_text || 'Explore Shop'} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/shop?is_flash_sale=true"
-                className="px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white font-semibold text-xs sm:text-sm backdrop-blur transition"
-              >
-                View Flash Sales
-              </Link>
-            </div>
+                  <div className="relative z-10 max-w-2xl">
+                    {activeSlide.badge_text && (
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[11px] sm:text-xs font-semibold mb-3 backdrop-blur-md">
+                        <Sparkles className="w-3.5 h-3.5 text-brand-400" /> {activeSlide.badge_text}
+                      </div>
+                    )}
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight mb-3">
+                      {activeSlide.title}
+                    </h1>
+                    <p className="text-gray-300 text-xs sm:text-base mb-6 leading-relaxed">
+                      {activeSlide.subtitle}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        to={activeSlide.btn_url || '/shop'}
+                        className="px-6 py-3.5 rounded-full bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-xl shadow-brand-600/40 flex items-center gap-2 transition"
+                      >
+                        {activeSlide.btn_text || 'Explore Shop'} <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <Link
+                        to="/shop?is_flash_sale=true"
+                        className="px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white font-semibold text-xs sm:text-sm backdrop-blur transition"
+                      >
+                        View Flash Sales
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Prev / Next Carousel Controls */}
+                  {heroSlides.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCurrentSlideIndex(prev => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur transition opacity-0 group-hover:opacity-100"
+                        aria-label="Previous Slide"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setCurrentSlideIndex(prev => (prev + 1) % heroSlides.length)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur transition opacity-0 group-hover:opacity-100"
+                        aria-label="Next Slide"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+                </section>
+              );
+            })()}
+
+            {/* Slide Thumbnails & Indicator Bar */}
+            {heroSlides.length > 1 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                {heroSlides.map((slide, idx) => (
+                  <button
+                    key={slide.id || idx}
+                    onClick={() => setCurrentSlideIndex(idx)}
+                    className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2.5 ${
+                      currentSlideIndex === idx
+                        ? 'bg-brand-50 dark:bg-brand-950/40 border-brand-500 text-brand-700 dark:text-brand-300 ring-2 ring-brand-500/20'
+                        : 'bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
+                    }`}
+                  >
+                    <img
+                      src={slide.image_url || slide.image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&q=80'}
+                      alt={slide.title}
+                      className="w-10 h-8 object-cover rounded-lg shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-extrabold uppercase block truncate text-brand-600 dark:text-brand-400">{slide.badge_text || `Slide #${idx + 1}`}</span>
+                      <span className="text-[11px] font-bold truncate block">{slide.title}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </section>
+        ) : (
+          /* Default Banner Fallback */
+          <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-dark-900 to-gray-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-12 shadow-2xl min-h-[260px] sm:min-h-[340px] flex items-center">
+            {heroImgUrl && (
+              <img src={heroImgUrl} alt="Hero" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay" />
+            )}
+            <div className="relative z-10 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[11px] sm:text-xs font-semibold mb-4 backdrop-blur-md">
+                {siteSettings.hero_badge_text || 'Next-Gen Shopping Experience'}
+              </div>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight mb-3">
+                {siteSettings.hero_title || 'Next-Gen Smartphones & Modern Lifestyle'}
+              </h1>
+              <p className="text-gray-300 text-xs sm:text-base mb-6 leading-relaxed">
+                {siteSettings.hero_subtitle || 'Upgrade your lifestyle with authentic brand products, official warranty, extra 2% account discount & instant Cash on Delivery across Bangladesh.'}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to={siteSettings.hero_btn_url || '/shop'} className="px-6 py-3.5 rounded-full bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xl">
+                  {siteSettings.hero_btn_text || 'Explore Shop'} <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
 
         {/* Quick Trust Badges Ribbon */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4">
@@ -290,6 +389,77 @@ export const HomePage: React.FC<HomePageProps> = ({ onAddToCart }) => {
           })}
         </div>
       </section>
+
+      {/* ── 3. Exclusive Deals & Offers Section (with picture cards & redirect links) ── */}
+      {dealCards.length > 0 && (
+        <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+          <div className="p-5 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-brand-500/10 to-purple-500/10 border border-orange-200 dark:border-orange-950/40 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-xl bg-orange-500 text-white shadow-md">
+                    <Sparkles className="w-4 h-4" />
+                  </span>
+                  <h2 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
+                    Exclusive Deals & Offers
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  ছবি সহ বিশেষ ছাড় ও অফার কার্ডসমূহে ক্লিক করে সরাসরি অফারের প্রোডাক্ট ক্যাটালগে চলে যান
+                </p>
+              </div>
+
+              <Link
+                to="/shop?is_flash_sale=true"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline shrink-0"
+              >
+                সব অফার দেখুন <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {dealCards.map((card) => (
+                <Link
+                  key={card.id}
+                  to={card.target_url || '/shop?is_flash_sale=true'}
+                  className="group relative rounded-2xl bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 overflow-hidden shadow-sm hover:shadow-xl transition duration-300 flex flex-col justify-between"
+                >
+                  <div className="relative h-44 bg-gray-100 dark:bg-dark-900 overflow-hidden">
+                    <img
+                      src={card.image_url || card.image || 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&q=80'}
+                      alt={card.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                    />
+                    {card.badge_text && (
+                      <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-brand-600 text-white font-black text-[10px] uppercase shadow-lg tracking-wider">
+                        {card.badge_text}
+                      </span>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3 text-white font-bold text-xs">
+                      অফারের পণ্যগুলো দেখুন →
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-1.5 flex-1">
+                    <h3 className="font-extrabold text-sm text-gray-900 dark:text-white group-hover:text-brand-600 transition line-clamp-1">
+                      {card.title}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {card.subtitle || 'সবচেয়ে সেরা অফার ও ডিসকাউন্টে প্রোডাক্ট অর্ডার করুন।'}
+                    </p>
+                  </div>
+
+                  <div className="px-4 py-2.5 bg-gray-50 dark:bg-dark-900/50 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
+                    <span>Explore Products</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
 
       {/* ── 3. Trending Products Grid ─────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">

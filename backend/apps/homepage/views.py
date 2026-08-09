@@ -2,8 +2,8 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from core.permissions import IsAdminOrReadOnly
-from apps.homepage.models import HomepageSection, AnnouncementBar
-from apps.homepage.serializers import HomepageSectionSerializer, AnnouncementBarSerializer
+from apps.homepage.models import HomepageSection, AnnouncementBar, HeroSlide
+from apps.homepage.serializers import HomepageSectionSerializer, AnnouncementBarSerializer, HeroSlideSerializer
 
 
 class HomepageDataView(APIView):
@@ -34,3 +34,20 @@ class AdminHomepageSectionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'id'
     queryset = HomepageSection.objects.all()
+
+
+class HeroSlideListView(generics.ListCreateAPIView):
+    serializer_class = HeroSlideSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        if self.request.user and self.request.user.is_staff:
+            return HeroSlide.objects.all().order_by('sort_order', '-created_at')
+        return HeroSlide.objects.filter(is_active=True).order_by('sort_order', '-created_at')
+
+
+class HeroSlideDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = HeroSlideSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    lookup_field = 'id'
+    queryset = HeroSlide.objects.all()

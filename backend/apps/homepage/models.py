@@ -79,7 +79,7 @@ class HomepageSection(TimeStampedModel):
 
 class HeroSlide(TimeStampedModel):
     """Individual slide for the hero carousel."""
-    section = models.ForeignKey(HomepageSection, on_delete=models.CASCADE, related_name='hero_slides')
+    section = models.ForeignKey(HomepageSection, null=True, blank=True, on_delete=models.CASCADE, related_name='hero_slides')
     title = models.CharField(max_length=300, blank=True)
     subtitle = models.CharField(max_length=500, blank=True)
     image = models.ImageField(upload_to='hero/')

@@ -1,0 +1,38 @@
+# PriyoShop Backend — Requirements
+# Python 3.14+
+
+# Core
+Django>=5.0
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.3
+django-filter>=24.0
+django-environ>=0.11
+
+# Database
+psycopg2-binary>=2.9
+
+# Image processing
+Pillow>=10.0
+
+# Async / Background tasks
+celery>=5.3
+redis>=5.0
+django-celery-beat>=2.6
+django-celery-results>=2.5
+
+# Reports
+openpyxl>=3.1
+fpdf2>=2.7
+
+# API Documentation
+drf-spectacular>=0.27
+
+# Rate limiting
+django-ratelimit>=4.1
+
+# PDF (pure Python, no C++ needed)
+fpdf2>=2.7
+
+# Utilities
+python-slugify>=8.0

@@ -13,7 +13,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = [
             'id', 'product', 'variant', 'product_name', 'product_sku', 'variant_name',
-            'quantity', 'unit_price', 'item_discount', 'line_total', 'returned_quantity'
+            'quantity', 'unit_price', 'item_discount', 'line_total', 'returned_quantity',
+            'measurement_type', 'measurement_value', 'measurement_unit', 'density_g_per_ml',
+            'unit_weight_grams', 'total_weight_grams', 'delivery_charge_applicable', 'free_delivery_when_alone'
         ]
 
 
@@ -47,6 +49,7 @@ class OrderListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'order_number', 'status', 'payment_method', 'payment_status',
             'customer_name', 'customer_phone', 'grand_total', 'item_count',
+            'total_physical_weight_grams', 'is_single_product_free_delivery',
             'is_flagged', 'created_at'
         ]
 
@@ -63,6 +66,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'shipping_phone', 'shipping_address', 'shipping_city', 'shipping_area',
             'shipping_postal_code', 'shipping_note', 'subtotal', 'discount_amount',
             'coupon_discount', 'account_discount', 'shipping_charge', 'grand_total',
+            'total_physical_weight_grams', 'chargeable_weight_grams',
+            'is_single_product_free_delivery', 'delivery_charge_reason',
             'coupon_code_used', 'items', 'status_history', 'is_flagged', 'created_at'
         ]
 

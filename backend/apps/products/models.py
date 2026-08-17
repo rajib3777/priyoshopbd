@@ -49,11 +49,50 @@ class Product(BaseModel):
                                       help_text='[{"label": "...", "value": "..."}]')
     video_url = models.URLField(blank=True)
 
-    # Physical
-    weight = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True)
+    # Physical & Measurement
+    weight = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True, help_text='Physical weight in kg')
     length = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     width = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     height = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+
+    # ─── Measurement & Delivery Configuration ──────────────────────────────
+    MEASUREMENT_TYPE_CHOICES = [
+        ('weight', 'Weight'),
+        ('volume', 'Volume'),
+    ]
+    MEASUREMENT_UNIT_CHOICES = [
+        ('g', 'Gram (g)'),
+        ('kg', 'Kilogram (kg)'),
+        ('ml', 'Millilitre (ml)'),
+        ('litre', 'Litre (L)'),
+    ]
+
+    delivery_charge_applicable = models.BooleanField(
+        default=True, db_index=True,
+        help_text='If false, this product weight is excluded from delivery charge calculation'
+    )
+    free_delivery_when_alone = models.BooleanField(
+        default=False, db_index=True,
+        help_text='If true, delivery is FREE (৳0) only when this is the sole product type in the order'
+    )
+    measurement_type = models.CharField(
+        max_length=20, choices=MEASUREMENT_TYPE_CHOICES, default='weight'
+    )
+    measurement_value = models.DecimalField(
+        max_digits=10, decimal_places=3, default=Decimal('0.000'),
+        help_text='Weight in g/kg or Volume in ml/L'
+    )
+    measurement_unit = models.CharField(
+        max_length=20, choices=MEASUREMENT_UNIT_CHOICES, default='g'
+    )
+    density_g_per_ml = models.DecimalField(
+        max_digits=6, decimal_places=3, default=Decimal('1.000'),
+        help_text='Density in g/ml (for volume products, e.g. Oil=0.92, Milk=1.03, Water=1.00)'
+    )
+    normalized_weight_grams = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0.000'), db_index=True,
+        help_text='Automatically normalized weight in grams'
+    )
 
     # ─── Pricing (CRITICAL: never overwrite history) ─────────────────────────
     buying_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
@@ -147,6 +186,36 @@ class Product(BaseModel):
         if self.buying_price > 0:
             return round((self.potential_margin / self.buying_price) * 100, 2)
         return 0
+
+    def calculate_normalized_weight(self):
+        """Calculate and return product weight normalized to grams."""
+        val = Decimal(str(self.measurement_value or 0))
+        m_type = self.measurement_type or 'weight'
+        unit = (self.measurement_unit or 'g').lower()
+        density = Decimal(str(self.density_g_per_ml or 1))
+        if density <= 0:
+            density = Decimal('1.000')
+
+        if m_type == 'volume':
+            if unit in ['litre', 'l']:
+                return (val * Decimal('1000') * density).quantize(Decimal('0.001'))
+            else: # ml
+                return (val * density).quantize(Decimal('0.001'))
+        else: # weight
+            if unit == 'kg':
+                return (val * Decimal('1000')).quantize(Decimal('0.001'))
+            elif unit == 'g':
+                return val.quantize(Decimal('0.001'))
+            elif self.weight and self.weight > 0 and val == 0:
+                # fallback from physical weight (in kg)
+                return (Decimal(str(self.weight)) * Decimal('1000')).quantize(Decimal('0.001'))
+            return val.quantize(Decimal('0.001'))
+
+    def save(self, *args, **kwargs):
+        self.normalized_weight_grams = self.calculate_normalized_weight()
+        if self.normalized_weight_grams > 0:
+            self.weight = (self.normalized_weight_grams / Decimal('1000')).quantize(Decimal('0.001'))
+        super().save(*args, **kwargs)
 
 
 # ─── Product Image ─────────────────────────────────────────────────────────────

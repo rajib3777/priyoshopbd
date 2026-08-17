@@ -78,6 +78,15 @@ class Order(TimeStampedModel):
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
 
+    # ─── Weight & Delivery Tracking Snapshots ──────────────────────────────
+    total_physical_weight_grams = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0.000'))
+    chargeable_weight_grams = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0.000'))
+    is_single_product_free_delivery = models.BooleanField(default=False)
+    delivery_charge_reason = models.CharField(max_length=100, blank=True, default='')
+    delivery_tier_name = models.CharField(max_length=100, blank=True, default='')
+    delivery_tier_min_weight = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    delivery_tier_max_weight = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
     # Profit tracking (snapshot)
     total_buying_cost = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
     estimated_profit = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
@@ -141,6 +150,16 @@ class OrderItem(TimeStampedModel):
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
     line_buying_cost = models.DecimalField(max_digits=12, decimal_places=2)
     line_profit = models.DecimalField(max_digits=12, decimal_places=2)
+
+    # ─── Measurement & Weight Snapshot ─────────────────────────────────────
+    measurement_type = models.CharField(max_length=20, default='weight')
+    measurement_value = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.000'))
+    measurement_unit = models.CharField(max_length=20, default='g')
+    density_g_per_ml = models.DecimalField(max_digits=6, decimal_places=3, default=Decimal('1.000'))
+    unit_weight_grams = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0.000'))
+    total_weight_grams = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0.000'))
+    delivery_charge_applicable = models.BooleanField(default=True)
+    free_delivery_when_alone = models.BooleanField(default=False)
 
     # Return tracking
     returned_quantity = models.PositiveIntegerField(default=0)

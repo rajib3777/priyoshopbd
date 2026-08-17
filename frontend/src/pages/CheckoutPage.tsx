@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Truck, Banknote, ArrowRight, CheckCircle, Tag } from 'lucide-react';
+import { ShieldCheck, Truck, Banknote, ArrowRight, CheckCircle, Tag, Scale, Sparkles } from 'lucide-react';
 import api from '@/api/client';
 import { Cart } from '@/types';
 
@@ -31,16 +31,47 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCar
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // ── Dynamic Delivery Preview State from Backend ──
+  const [deliveryInfo, setDeliveryInfo] = useState<{
+    delivery_charge: number;
+    delivery_charge_reason: string;
+    is_single_product_free_delivery: boolean;
+    total_physical_weight_grams: number;
+    chargeable_weight_grams: number;
+    chargeable_weight_kg: number;
+    tier_name?: string;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!cart || cart.items.length === 0) return;
+    setPreviewLoading(true);
+    api.post('/checkout/delivery-preview/', { city: formData.city })
+      .then(res => {
+        setDeliveryInfo({
+          delivery_charge: parseFloat(res.data.delivery_charge) || 0,
+          delivery_charge_reason: res.data.delivery_charge_reason || '',
+          is_single_product_free_delivery: Boolean(res.data.is_single_product_free_delivery),
+          total_physical_weight_grams: parseFloat(res.data.total_physical_weight_grams) || 0,
+          chargeable_weight_grams: parseFloat(res.data.chargeable_weight_grams) || 0,
+          chargeable_weight_kg: parseFloat(res.data.chargeable_weight_kg) || 0,
+          tier_name: res.data.tier_name,
+        });
+      })
+      .catch(() => {})
+      .finally(() => setPreviewLoading(false));
+  }, [cart, formData.city]);
+
   const dhakaCharge = Number(settings?.dhaka_delivery_charge ?? 60);
   const outsideCharge = Number(settings?.outside_dhaka_delivery_charge ?? 120);
-  const freeThreshold = Number(settings?.free_delivery_threshold ?? 2000);
   const accountDiscPct = Number(settings?.account_discount_percentage ?? 2);
 
   const subtotal = Number(cart?.subtotal || 0);
   const accountDiscount = (user && settings?.account_discount_enabled !== false) ? subtotal * (accountDiscPct / 100) : 0;
   const couponDiscount = couponApplied ? couponApplied.discount : 0;
-  const baseShipping = formData.city.toLowerCase() === 'dhaka' ? dhakaCharge : outsideCharge;
-  const shippingCharge = (freeThreshold > 0 && subtotal >= freeThreshold) ? 0 : baseShipping;
+  
+  // Delivery Charge from verified backend calculation engine
+  const shippingCharge = deliveryInfo ? deliveryInfo.delivery_charge : (formData.city.toLowerCase() === 'dhaka' ? dhakaCharge : outsideCharge);
   const grandTotal = Math.max(0, subtotal - accountDiscount - couponDiscount + shippingCharge);
 
   const handleApplyCoupon = async () => {
@@ -238,7 +269,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCar
             </div>
 
             {/* Price Breakdown */}
-            <div className="pt-3 border-t border-gray-100 dark:border-dark-700 space-y-2 text-xs">
+            <div className="pt-3 border-t border-gray-100 dark:border-dark-700 space-y-2.5 text-xs">
               <div className="flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Subtotal</span>
                 <span>৳{subtotal.toFixed(2)}</span>
@@ -255,10 +286,44 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ cart, user, clearCar
                   <span>−৳{couponDiscount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Delivery ({formData.city})</span>
-                <span>৳{shippingCharge}</span>
+
+              {/* Total Physical Weight Information */}
+              {deliveryInfo && deliveryInfo.total_physical_weight_grams > 0 && (
+                <div className="flex justify-between items-center text-gray-500 dark:text-gray-400 text-[11px] py-1 px-2 rounded-lg bg-gray-50 dark:bg-dark-900 border border-gray-100 dark:border-dark-700">
+                  <span className="flex items-center gap-1 font-medium">
+                    <Scale className="w-3.5 h-3.5 text-brand-600" /> Total Parcel Weight:
+                  </span>
+                  <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
+                    {deliveryInfo.total_physical_weight_grams >= 1000
+                      ? `${(deliveryInfo.total_physical_weight_grams / 1000).toFixed(2)} kg`
+                      : `${Math.round(deliveryInfo.total_physical_weight_grams)} g`}
+                  </span>
+                </div>
+              )}
+
+              {/* Delivery Charge Line */}
+              <div className="flex justify-between items-start text-gray-600 dark:text-gray-400">
+                <div>
+                  <span className="block">Delivery Fee ({formData.city})</span>
+                  {deliveryInfo?.is_single_product_free_delivery ? (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-500" /> Single Product Free Delivery
+                    </span>
+                  ) : deliveryInfo?.tier_name ? (
+                    <span className="text-[10px] text-gray-400 block">Tier: {deliveryInfo.tier_name}</span>
+                  ) : null}
+                </div>
+                <div>
+                  {shippingCharge === 0 ? (
+                    <span className="font-extrabold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full text-xs">
+                      FREE
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-gray-900 dark:text-white">৳{shippingCharge.toFixed(2)}</span>
+                  )}
+                </div>
               </div>
+
               <div className="flex justify-between text-base font-extrabold text-gray-900 dark:text-white pt-2 border-t border-gray-100 dark:border-dark-700">
                 <span>Total</span>
                 <span className="text-brand-600">৳{grandTotal.toFixed(2)}</span>

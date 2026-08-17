@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, X, Save, ChevronDown, Image as ImageIcon, Package } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Search, X, Save, ChevronDown, Image as ImageIcon, Package, Truck, Weight } from 'lucide-react';
 import api from '@/api/client';
 
 /* ── Helpers ─────────────────────────────────── */
@@ -15,6 +15,13 @@ const emptyForm = {
   track_inventory: true, allow_backorder: false, low_stock_threshold: '5',
   video_url: '',
   seo_title: '', seo_description: '', seo_keywords: '',
+  // ─── Delivery & Measurement ───────────────────────────────────────────
+  delivery_charge_applicable: true,
+  free_delivery_when_alone: false,
+  measurement_type: 'weight',  // 'weight' | 'volume'
+  measurement_value: '',
+  measurement_unit: 'g',       // 'g' | 'kg' | 'ml' | 'litre'
+  density_g_per_ml: '1.000',
 };
 
 const inputCls = "w-full mt-1 p-2.5 rounded-xl border border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-900 text-xs outline-none focus:ring-2 focus:ring-brand-500";
@@ -75,6 +82,13 @@ const ProductFormModal: React.FC<{
         seo_title: editing.seo_title || '',
         seo_description: editing.seo_description || '',
         seo_keywords: editing.seo_keywords || '',
+        // Delivery & Measurement
+        delivery_charge_applicable: editing.delivery_charge_applicable ?? true,
+        free_delivery_when_alone: editing.free_delivery_when_alone ?? false,
+        measurement_type: editing.measurement_type || 'weight',
+        measurement_value: editing.measurement_value || '',
+        measurement_unit: editing.measurement_unit || 'g',
+        density_g_per_ml: editing.density_g_per_ml || '1.000',
       });
       if (editing.primary_image) setImagePreview(editing.primary_image);
       if (editing.deal_cards) setSelectedDealCards(editing.deal_cards.map((d: any) => typeof d === 'object' ? d.id : d));
@@ -97,6 +111,27 @@ const ProductFormModal: React.FC<{
     }
   };
 
+  const calculatedWeightGrams = useMemo(() => {
+    const val = parseFloat(form.measurement_value) || 0;
+    const mType = form.measurement_type || 'weight';
+    const unit = (form.measurement_unit || 'g').toLowerCase();
+    const density = parseFloat(form.density_g_per_ml) || 1.0;
+
+    if (mType === 'volume') {
+      if (unit === 'litre' || unit === 'l') {
+        return val * 1000 * density;
+      } else {
+        return val * density;
+      }
+    } else {
+      if (unit === 'kg') {
+        return val * 1000;
+      } else {
+        return val;
+      }
+    }
+  }, [form.measurement_type, form.measurement_value, form.measurement_unit, form.density_g_per_ml]);
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setMsg('');
@@ -109,7 +144,7 @@ const ProductFormModal: React.FC<{
         published_price: parseFloat(form.published_price) || 0,
         discount_price: form.discount_price ? parseFloat(form.discount_price) : null,
         minimum_selling_price: form.minimum_selling_price ? parseFloat(form.minimum_selling_price) : null,
-        weight: form.weight ? parseFloat(form.weight) : null,
+        weight: calculatedWeightGrams > 0 ? (calculatedWeightGrams / 1000) : (form.weight ? parseFloat(form.weight) : null),
         length: form.length ? parseFloat(form.length) : null,
         width: form.width ? parseFloat(form.width) : null,
         height: form.height ? parseFloat(form.height) : null,
@@ -117,6 +152,13 @@ const ProductFormModal: React.FC<{
         category: form.category || null,
         subcategory: form.subcategory || null,
         brand: form.brand || null,
+        // Delivery & Weight system fields
+        measurement_type: form.measurement_type || 'weight',
+        measurement_value: form.measurement_value !== '' ? parseFloat(form.measurement_value) : 0,
+        measurement_unit: form.measurement_unit || 'g',
+        density_g_per_ml: form.density_g_per_ml !== '' ? parseFloat(form.density_g_per_ml) : 1.0,
+        delivery_charge_applicable: Boolean(form.delivery_charge_applicable),
+        free_delivery_when_alone: Boolean(form.free_delivery_when_alone),
       };
 
       let savedProduct: any;
@@ -156,6 +198,7 @@ const ProductFormModal: React.FC<{
   const tabs = [
     { key: 'basic', label: 'Basic Info' },
     { key: 'pricing', label: 'Pricing' },
+    { key: 'delivery', label: '📦 Delivery' },
     { key: 'inventory', label: 'Inventory' },
     { key: 'media', label: 'Media' },
     { key: 'seo', label: 'SEO' },
@@ -357,6 +400,198 @@ const ProductFormModal: React.FC<{
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── DELIVERY & MEASUREMENT ── */}
+            {activeTab === 'delivery' && (
+              <div className="space-y-5">
+                <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-xs text-blue-800 dark:text-blue-300">
+                  <span className="font-bold">📦 Delivery Weight & Pricing Engine:</span> Set product weight or volume. All measurements are automatically normalized to grams for backend delivery tier calculation.
+                </div>
+
+                {/* 1. Measurement Type & Value */}
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 space-y-4">
+                  <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Weight className="w-4 h-4 text-brand-600" />
+                    Physical Measurement (Weight / Volume)
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className={labelCls}>Measurement Type *</label>
+                      <select
+                        value={form.measurement_type}
+                        onChange={e => {
+                          const newType = e.target.value;
+                          set('measurement_type', newType);
+                          set('measurement_unit', newType === 'volume' ? 'litre' : 'g');
+                        }}
+                        className={inputCls}
+                      >
+                        <option value="weight">Solid / Weight (g, kg)</option>
+                        <option value="volume">Liquid / Volume (ml, Litre)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Measurement Value *</label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        value={form.measurement_value}
+                        onChange={e => set('measurement_value', e.target.value)}
+                        placeholder={form.measurement_type === 'volume' ? 'e.g. 1 (for 1L) or 500 (for 500ml)' : 'e.g. 500 (for 500g) or 2.5 (for 2.5kg)'}
+                        className={inputCls}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelCls}>Unit *</label>
+                      <select
+                        value={form.measurement_unit}
+                        onChange={e => set('measurement_unit', e.target.value)}
+                        className={inputCls}
+                      >
+                        {form.measurement_type === 'volume' ? (
+                          <>
+                            <option value="litre">Litre (L)</option>
+                            <option value="ml">Millilitre (ml)</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="g">Gram (g)</option>
+                            <option value="kg">Kilogram (kg)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Volume Density Configuration */}
+                  {form.measurement_type === 'volume' && (
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <div>
+                          <label className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                            Liquid Density (g/ml)
+                          </label>
+                          <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                            Volume is converted to weight via: <span className="font-mono">Weight (g) = Volume (ml) × Density</span>
+                          </p>
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.1"
+                          value={form.density_g_per_ml}
+                          onChange={e => set('density_g_per_ml', e.target.value)}
+                          className="w-28 p-2 text-xs rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-dark-900 font-mono font-bold text-right"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="text-[10px] text-gray-500 mr-1 self-center">Presets:</span>
+                        {[
+                          { name: 'Water / Juice (1.00)', val: '1.000' },
+                          { name: 'Mustard/Soybean Oil (0.92)', val: '0.920' },
+                          { name: 'Milk (1.03)', val: '1.030' },
+                          { name: 'Honey / Syrup (1.42)', val: '1.420' },
+                          { name: 'Ghee (0.90)', val: '0.900' },
+                        ].map(p => (
+                          <button
+                            key={p.val}
+                            type="button"
+                            onClick={() => set('density_g_per_ml', p.val)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium transition ${
+                              form.density_g_per_ml === p.val
+                                ? 'bg-amber-600 text-white'
+                                : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Live Normalized Weight Display */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 block">
+                        Normalized Weight for Delivery Tier:
+                      </span>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                        {form.measurement_type === 'volume'
+                          ? `Calculated from ${form.measurement_value || 0} ${form.measurement_unit} @ ${form.density_g_per_ml} g/ml`
+                          : `Calculated from ${form.measurement_value || 0} ${form.measurement_unit}`}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-300 font-mono">
+                        {calculatedWeightGrams.toLocaleString()} g
+                      </span>
+                      <span className="text-xs text-emerald-600 block">
+                        ({(calculatedWeightGrams / 1000).toFixed(3)} kg)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Delivery Rules & Free Delivery Toggles */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Delivery Charge Applicable */}
+                  <label className={`p-4 rounded-xl border cursor-pointer transition flex items-start gap-3 ${
+                    form.delivery_charge_applicable
+                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-800 ring-1 ring-blue-400'
+                      : 'bg-gray-50 dark:bg-dark-900 border-gray-200 dark:border-dark-700 opacity-70'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={form.delivery_charge_applicable}
+                      onChange={e => set('delivery_charge_applicable', e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-blue-600 shrink-0"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white block">
+                        Chargeable for Delivery
+                      </span>
+                      <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                        {form.delivery_charge_applicable
+                          ? '✓ Product weight is counted towards the cart delivery charge tiers.'
+                          : '✕ Excluded: Product weight will NOT increase delivery charge.'}
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Free Delivery When Ordered Alone */}
+                  <label className={`p-4 rounded-xl border cursor-pointer transition flex items-start gap-3 ${
+                    form.free_delivery_when_alone
+                      ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 ring-1 ring-emerald-400'
+                      : 'bg-gray-50 dark:bg-dark-900 border-gray-200 dark:border-dark-700'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={form.free_delivery_when_alone}
+                      onChange={e => set('free_delivery_when_alone', e.target.checked)}
+                      className="mt-1 w-4 h-4 accent-emerald-600 shrink-0"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-gray-900 dark:text-white">
+                          Free Delivery When Ordered Alone
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                          Special Offer
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1 leading-snug">
+                        If a customer orders <strong>ONLY this product</strong> (any quantity), delivery fee will be <strong>৳0 (FREE)</strong>. If mixed with other products, regular weight-based delivery charge applies.
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
 
@@ -606,7 +841,24 @@ export const AdminProductListPage: React.FC = () => {
                       )}
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white line-clamp-1">{p.name}</p>
-                        <p className="text-[10px] text-gray-400">{p.category_name || '—'}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-gray-400">{p.category_name || '—'}</span>
+                          {p.normalized_weight_grams ? (
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-gray-300">
+                              ⚖️ {p.normalized_weight_grams >= 1000 ? `${(p.normalized_weight_grams / 1000).toFixed(2)} kg` : `${Math.round(p.normalized_weight_grams)} g`}
+                            </span>
+                          ) : null}
+                          {p.free_delivery_when_alone && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                              🚚 Free (Alone)
+                            </span>
+                          )}
+                          {p.delivery_charge_applicable === false && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+                              🛡️ Delivery Exempt
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </td>

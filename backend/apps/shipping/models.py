@@ -44,3 +44,22 @@ class ShippingRate(TimeStampedModel):
         if self.free_shipping_threshold and order_total >= self.free_shipping_threshold:
             return Decimal('0.00')
         return self.rate
+
+
+class WeightDeliveryTier(TimeStampedModel):
+    """Weight-based dynamic delivery charge tier."""
+    name = models.CharField(max_length=100, help_text='e.g. 0 - 1 kg')
+    min_weight_grams = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text='Minimum weight in grams (inclusive)')
+    max_weight_grams = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text='Maximum weight in grams (inclusive), null for unlimited')
+    charge = models.DecimalField(max_digits=10, decimal_places=2, help_text='Delivery charge in BDT for this weight tier')
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'shipping_weight_tiers'
+        ordering = ['sort_order', 'min_weight_grams']
+
+    def __str__(self):
+        max_str = f"{self.max_weight_grams}g" if self.max_weight_grams else "unlimited"
+        return f"{self.name} ({self.min_weight_grams}g - {max_str}): ৳{self.charge}"
+

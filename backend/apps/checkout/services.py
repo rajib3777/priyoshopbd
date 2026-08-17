@@ -150,8 +150,17 @@ class CheckoutService:
                 coupon_code, customer, subtotal - account_discount
             )
 
-        # ─── Step 9: Calculate Shipping ───────────────────────────────────
-        shipping_charge = self._calculate_shipping(subtotal - account_discount - coupon_discount)
+        # ─── Step 9: Calculate Shipping via Dynamic Delivery Engine ───────
+        city = self.data.get('city', 'Dhaka')
+        area = self.data.get('area', '')
+        delivery_result = self._calculate_shipping(
+            cart_items=cart_items,
+            order_subtotal=subtotal - account_discount - coupon_discount,
+            city=city,
+            area=area,
+            customer=customer
+        )
+        shipping_charge = delivery_result['delivery_charge']
 
         # ─── Step 10: Calculate Final Total ──────────────────────────────
         discount_total = account_discount + coupon_discount
@@ -201,21 +210,33 @@ class CheckoutService:
             grand_total=grand_total,
             total_buying_cost=round_currency(total_buying_cost),
             estimated_profit=round_currency(estimated_profit),
+            # Weight & Delivery snapshot
+            total_physical_weight_grams=delivery_result.get('total_physical_weight_grams', Decimal('0.000')),
+            chargeable_weight_grams=delivery_result.get('chargeable_weight_grams', Decimal('0.000')),
+            is_single_product_free_delivery=delivery_result.get('is_single_product_free_delivery', False),
+            delivery_charge_reason=delivery_result.get('delivery_charge_reason', ''),
+            delivery_tier_name=delivery_result.get('delivery_tier_name', ''),
+            delivery_tier_min_weight=delivery_result.get('delivery_tier_min_weight'),
+            delivery_tier_max_weight=delivery_result.get('delivery_tier_max_weight'),
             coupon=coupon_obj,
             coupon_code_used=coupon_code,
             idempotency_key=idempotency_key,
             ip_address=get_client_ip(self.request),
         )
 
-        # ─── Step 13: Create Order Items ──────────────────────────────────
+        # ─── Step 13: Create Order Items (with Weight Snapshots) ───────────
         for d in order_items_data:
             item = d['item']
+            p = item.product
+            unit_weight = p.normalized_weight_grams or Decimal('0.000')
+            total_weight = (unit_weight * Decimal(str(item.quantity))).quantize(Decimal('0.001'))
+
             OrderItem.objects.create(
                 order=order,
-                product=item.product,
+                product=p,
                 variant=item.variant,
-                product_name=item.product.name,
-                product_sku=item.variant.sku if item.variant else item.product.sku,
+                product_name=p.name,
+                product_sku=item.variant.sku if item.variant else p.sku,
                 variant_name=item.variant.name if item.variant else '',
                 quantity=item.quantity,
                 buying_price_snapshot=d['buying_price_snapshot'],
@@ -226,6 +247,15 @@ class CheckoutService:
                 line_total=d['line_total'],
                 line_buying_cost=d['line_buying_cost'],
                 line_profit=d['line_profit'],
+                # Weight & Measurement snapshots
+                measurement_type=p.measurement_type or 'weight',
+                measurement_value=p.measurement_value or Decimal('0.000'),
+                measurement_unit=p.measurement_unit or 'g',
+                density_g_per_ml=p.density_g_per_ml or Decimal('1.000'),
+                unit_weight_grams=unit_weight,
+                total_weight_grams=total_weight,
+                delivery_charge_applicable=p.delivery_charge_applicable,
+                free_delivery_when_alone=p.free_delivery_when_alone,
             )
 
         # ─── Step 14: Deduct Stock ────────────────────────────────────────
@@ -354,31 +384,20 @@ class CheckoutService:
         discount = coupon.calculate_discount(order_amount)
         return coupon, discount
 
-    def _calculate_shipping(self, order_total):
-        """Calculate shipping charge based on shipping zone/rate config."""
-        city = self.data.get('city', '').strip().lower()
-        area = self.data.get('area', '').strip().lower()
-
-        # Find matching zone
-        from apps.shipping.models import ShippingZone
-        zone = None
-        for z in ShippingZone.objects.filter(is_active=True).prefetch_related('rates'):
-            cities = [c.strip().lower() for c in z.cities.split(',') if c.strip()]
-            areas = [a.strip().lower() for a in z.areas.split(',') if a.strip()]
-            if city in cities or area in areas:
-                zone = z
-                break
-
-        if zone:
-            rate = zone.rates.filter(is_active=True).first()
-        else:
-            # Default: first active rate
-            from apps.shipping.models import ShippingRate
-            rate = ShippingRate.objects.filter(is_active=True).first()
-
-        if rate:
-            return rate.calculate(order_total)
-        return Decimal('0.00')
+    def _calculate_shipping(self, cart_items=None, order_subtotal=None, city='Dhaka', area='', customer=None):
+        """
+        Calculate shipping using weight-based DeliveryCalculator engine.
+        Falls back to zone/flat rate if no tiers configured.
+        Returns a dict with delivery_charge, reason, and weight breakdown.
+        """
+        from apps.shipping.services import DeliveryCalculator
+        return DeliveryCalculator.calculate(
+            items=cart_items or [],
+            subtotal=order_subtotal or Decimal('0.00'),
+            city=city,
+            area=area,
+            customer=customer,
+        )
 
     def _calculate_risk_score(self, order):
         """Calculate fraud risk score for COD orders."""
